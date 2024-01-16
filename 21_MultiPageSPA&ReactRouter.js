@@ -118,3 +118,82 @@
 // Lesson 456. Working with Index Routes
 
 //  The route defintions, defined/created in the createBrowserRouter function, have the option for a special 'index' prop. Adding the 'index' prop and setting its value to "true" will make that route the default route when the parent path is active, i.e. The 'index' prop, on the route defintions, allows for defining the default route that should be loaded if the parent route's path is active. Often, such a default route is useful. This is an alternative to adding an empty path ("") for the default (home) route, i.e. This is typically used for a single route, the home page, of a website/application. This route is also known as the "index" route.
+
+// Lesson 459. Time to Practice: Solution
+
+// The order of route defintions can be deterministic depending on the path names of the routes and if any path name clashes exist within the route definitions array. However, React Router is quite intuitive and normally this is not an issue in most situations.
+
+// A hard-coded path segment can follow a dynamic path segment, e.g. /products/:productId/edit
+
+// Links to the home page of an app/website should always have an abolute path of "/" because they should always take the user back to the home/root page, instead of a relative path that would just be adding the link's path to the end of the currently active path in the URL. This should be applied to any page links that require an absolute path to ensure navigation to the appropriate page (URL). These page links will typically be the ones that are listed in the header/navigation bar.
+
+// React Router provides a useParam function. The useParam function returns properties of the URL parameters. These param property names are determined by the naming of the path identifier following the ":" for a given route definition, i.e. path: "/products/:id" -> const params = useParams() -> params.id would return the respective values of the "id" path identifier, which follows the colon in the path of the route definition, e.g. "/products/3" -> params.id would return 3 as its value because that is the current value/path of the URL param "id" path identifier.
+
+// Lesson 460. Data Fetching with a loader()
+
+// With React Router, version six or higher, all the fetch requests and associated error/loading state can be handled by the react-router-dom via another route definition prop. To implement this, add the "loader" property to the route definition of a given route/page. The "loader' prop is a property that takes a function as a value, and this function will be executed by React Router prior to the route/page being visited. Just before the route - more specifically, the JSX code (component) the route path is pointing to - is rendered, the loader prop function will be triggered and executed by React Router.
+//      - It's in this loader function where fetch data can be handled and loaded. When defining a loader function, React Router will automatically take any value returned via that function, for example, the response data, and will make that data available in that page that's being rendered as well as any other components where that data is needed. By returning specific data on the response object via dot notation, the specified data is made available to the given page and any other components that need the data.
+
+// Lesson 461. Using Data From A Loader In The Route Component
+
+And now to get access to the data returned
+
+by the loader function for this page,
+
+we can import "use loader data" from React-router-dom.
+
+This is a special hook which we can execute
+
+to get access to the closest loader data,
+
+
+
+And events here will really be
+
+that data returned by that loader.
+
+Now since I'm using a single weight,
+
+technically this loader function will return a promise.
+
+Any data returned in that function will be wrapped
+
+by a promise, that's how a single weight works.
+
+But React Router will actually check
+
+if a promise is returned and automatically get
+
+the resolved data from that promise for you.
+
+So you don't need to worry about
+
+whether you are returning a promise here or not,
+
+you will always get the final data that would be yielded
+
+by the promise with help of use loader data.
+
+And therefore now it's this events object,
+
+this array of events, which we can pass as a value
+
+to this events prop on events list.
+
+And we got this all due to the code we wrote in this loader.
+
+And of course that's much less code than what we had before,
+
+and it's also not part of the component function,
+
+which makes the component function way leaner
+
+and easier to reason about. Of course,
+
+// Lesson 462. More loader() Data Usage
+
+But there technically is no difference
+
+between page components and other components,
+
+so therefore we can use it here as well.
