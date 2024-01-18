@@ -136,64 +136,456 @@
 
 // Lesson 461. Using Data From A Loader In The Route Component
 
-And now to get access to the data returned
-
-by the loader function for this page,
-
-we can import "use loader data" from React-router-dom.
-
-This is a special hook which we can execute
-
-to get access to the closest loader data,
-
-
-
-And events here will really be
-
-that data returned by that loader.
-
-Now since I'm using a single weight,
-
-technically this loader function will return a promise.
-
-Any data returned in that function will be wrapped
-
-by a promise, that's how a single weight works.
-
-But React Router will actually check
-
-if a promise is returned and automatically get
-
-the resolved data from that promise for you.
-
-So you don't need to worry about
-
-whether you are returning a promise here or not,
-
-you will always get the final data that would be yielded
-
-by the promise with help of use loader data.
-
-And therefore now it's this events object,
-
-this array of events, which we can pass as a value
-
-to this events prop on events list.
-
-And we got this all due to the code we wrote in this loader.
-
-And of course that's much less code than what we had before,
-
-and it's also not part of the component function,
-
-which makes the component function way leaner
-
-and easier to reason about. Of course,
+// To get access to the data returned by the loader function, for a given page, import the useLoaderData hook from react-router-dom. This hook can be executed to get access to the "closest" loader data. Technically, the loader function will return a promise if the return statement includes an async/await fetch request. Any data returned in that function will be wrapped by a promise, that's how async/await works. But, React Router will actually check if a promise is returned and automatically get the actual data from that promise instead of having to write explicit code in the application to get it, i.e. the necessary data will be returned by the loader function via the use of the useLoaderData hook.
 
 // Lesson 462. More loader() Data Usage
 
-But there technically is no difference
+// There is no real difference between page components and other components, so therefore the useLoaderData hook grants access to loader data in nested/child routes/components or siblings, i.e. if a parent route implements the loader function, any of its nested/child routes/components, or siblings, will be able to access the returned data via the useLoaderData hook.
+//      - Alt defintion: Access loader data, with help of the useLoaderData hook, in any route/component that is on the same level (sibling), or on a lower level (child), of the route/component where the loader was implemented - the route on which the loader was added, i.e. use useLoaderData() in the element/component that's assigned to a route, and is implementing a loader prop function, AND in all components that might be used inside that element/component - any sibling route's or child route's elements/components.
+//      - Be careful not to use useLoaderData on a higher level than where the data is being fetched from. It will not be able to reach the necessary data for a given route/component.
+//      - Whatever data is returned by the loader function is the data that will be available to the components to access via the useLoaderData hook.
 
-between page components and other components,
+// Lesson 463. Where Should loader() Code Be Stored?
 
-so therefore we can use it here as well.
+// Place loader function logic in an associated component file or in its own separate file, NOT in the App.js file where the router is located.
+
+// NOTE: Rename imported named exports in-line using the "as" keyword in the import syntax, e.g. import {function as newFunction} from "./file"
+//      - The named exports are imported as props on an export object which is why they must be destructred when imported into a file.
+// NOTE: Import a default export and named exports from the same file via the same line of code, e.g. import Component, { function } from "./file"
+//      - each file can only have a single default export but multiple named exports. The named exports must be imported by their assigned name, although once imported into a file they can be renamed as noted above, but the default export can be imported via any chosen name since there can only be a single default export per file, i.e. the default export can be assigned a new name when imported by simply assigning a new name on import.
+
+// Lesson 464. When Are loader() Functions Executed?
+
+// The loader for a page will be called right when the page link is clicked and navigation to that page begins, i.e. not after the page component has been rendered, but actually before the component is rendered, which means all of the loader data will be executed and retrieved before the component is rendered. 
+//      - By default, React Router will actually wait for the data to be fetched - for the loader to be finished executing - before it then renders the page/component with the fetched data from the loader function.
+//              - The advantage of this approach is that the data will be reliably fetched and available for the component before it is rendered/(once it is rendered). Therefore, it is not necessary to dispaly a "loading..." state for this component. 
+//              - The downside is that there is a delay where it looks to the user as if nothing is happening, i.e. it can appear that the page is not being navigated to right away.
+
+// Lesson 465. Reflecting The Current Navigation State in the UI
+
+// The useNavigation hook is a hook provided by React Router that tracks the current state of transition for a route/component; whether currently in an active transition, if data is actively/currently being loaded, or if no active transition is occurring. This hook provides a navigation object when executed, i.e. const navigation = useNavigation().
+//      - The navigation object has a couple of properties. The state property is the most important one for now. It's value is a string which is either 'idle', 'loading', or 'submitting'. These values are determined by whether there are any active route transitions, if an active transition is occurring and data is being loaded, or if data is being submitted.
+//              - For active transitions/loading, it's important to recognize that the loading indicator won't be added on the page which is being transitioned to, but instead on a page/component, which is already visible on the screen - the one using the navigation object - when the transition is started. That's different compared to rendering components with useEffect and having a separate 'loading' state for that.
+
+// Lesson 466. Returning Responses in loader()s
+
+// One important aspect of a loader function is to understand that it can return any kind of data. It can also return a response object, i.e. in the browser, create a new response object by instantiating the built-in 'Response' constructor function, i.e. const response = new Response().
+//      - This is built into the browser and is a modern browser feature. This allows for building custom responses. What's really important to understand at this point is that the loader function code will not execute on a server (back-end). This is still only executing in the browser, even though it's not in a component, it's still in the browser. It is still client-side code, which is very important to understand, i.e. the browser allows for creating a 'Response' because it supports the 'Response' constructor and response object feature. The 'Response' constructor takes any data of any data type as its first argument and then a customizable/configurable JS object can be set as a second argument, e.g. set the status code of the response using the JS object, i.e. {status: 500}.
+//      - Whenever a response object is returned via a loader function, the React Router package will automatically extract the data from the response object when using the useLoaderData hook, i.e. the data returned by useLoaderData will be the response data that was part of the response object returned in the loader function - it will parse and return the first argument (the data) automatically.
+
+// Why is this useful since the data can be returned without the response object generated by the 'Response' constructor?
+
+// This feature exists because it's quite common that the loader function on a given route reaches out to some backend with the browser's built-in fetch function (fetch("URL...")), and this fetch function actually returns a promise that resolves to a 'Response' - evaluates and returns a response object. 
+//      - This built-in browser feature, combined with React Router's support for response objects - and its automatic data extraction feature - simply means that React Router can take the response object and return that via the loader. The data does not need to be manually extracted from the response object using .json(), i.e. it does not require converting the response to json - e.g. response.json() - and then storing the data in a variable that is returned. Instead, return the entire response object, with or without checking whether there is an error within the response, i.e. Simply return the entire response and the useLoaderData hook will then automatically extract the data that's part of the response, without using any json formatting functions. When implementing this approach, be sure to specify the prop on the data (response) object that contains the exact data which needs to be accessed, e.g. const data = useLoaderData() -> const items = data.items
+
+// Lesson 467. Which Kind Of Code Goes Into loader()s?
+
+// Remember, the code that's defined in the loader function executes in the browser, not on some server. Thus, any browser APIs can be used in loader functions. For example, access local storage, cookies, and anything else that can be executed in JavaScript code.
+
+// However, React Hooks like useState cannot be used inside these loader function because those hooks are only available in React components and the loader function is not a React component. That's the only limitation. Any other default browser features can be used in loader functions.
+
+// Lesson 468. Error Handling with Custom Errors
+
+// The response is not okay if it has a 400 or 500 status code. In this case, return a different response or just return a JS object. It doesn't have to be a response object.
+//      - In the JS object, simply add an error key and a message. With this, if an error occurs with the fetch request, the loader function will return this JS object (error/message) data package instead of the response object data package returned by the API request on a successful response.
+//              - With that, the data object will contain an error prop which can be "if" checked for a truthy value. If it returns 'true', the error message stored on the data object can be rendered to the browser via the component. With that, the error generation and handling code is handled by the loader function where it belongs, arguably. This is one way of handling errors - simply returning a JS object with an error prop that indicates an error and then using that data appropriately
+
+in the component.
+
+Now I'll comment this out though because that's not
+
+how I'll do it here, because there is an alternative.
+
+As an alternative to returning this data here
+
+to the component, we could throw an error.
+
+For this we can construct a new error object
+
+with the built in error constructor,
+
+or we throw any other kind of object as an error.
+
+And here we could then also, for example,
+
+include a message and say, 'could not fetch events'.
+
+Like that.
+
+Now, when an error gets thrown in a loader
+
+something special happens.
+
+React router will simply render the closest error element.
+
+to the Root Route to have a fallback page that would be
+
+displayed in case of 4 0 4 errors.
+
+So if we navigated to paths that aren't supported.
+
+Well, turns out that error element is not just there to
+
+show a fallback page in case of invalid route paths.
+
+That is one use case but not the only one.
+
+Instead, the error element will be shown
+
+to the screen whenever an error is generated
+
+in any route related code, including loaders.
+
+For that of course, error page must be imported.
+
+Then it's added here with error element on that Root path.
+
+With that, this page,
+
+this error page, will be displayed whenever
+
+we basically have any kind of error anywhere
+
+in our routes because even though I'm throwing an error here
+
+in the loader of the events page.
+
+So in this route here, which is a deeply nested route,
+
+errors will bubble up.
+
+We could add error element to this route as well.
+
+And in that case, this error element would be rendered
+
+if this loader threw an error.
+
+But we can also just have this Root level error element
+
+and the error would bubble up until it reaches that route.
+
+// Lesson 469. Extracting Error Data & Throwing Responses
+
+For example, we might want
+
+to differentiate
+
+between 4 0 4 errors
+
+and other errors
+
+like the one we have here
+
+from our loader,
+
+where we actually have an error
+
+message that we might
+
+wanna display instead
+
+of the default error message
+
+I defined here.
+
+So to differentiate between errors
+
+what we can do is instead
+
+of throwing a object,
+
+we can throw a response
+
+by again creating a new response.
+
+And then we can include some data
+
+into that response.
+
+For this, we have
+
+to call JSON stringify
+
+if we want to pass an object
+
+to the response.
+
+And then we could add
+
+a message prop and say
+
+could not fetch events.
+
+And now we can add
+
+this second argument
+
+to the response constructor
+
+and set the status, for example,
+
+to 500 to indicate
+
+that something went wrong
+
+on the back end.
+
+That's just one example.
+
+In this case, it's an incorrect URL,
+
+but we could set this status code.
+
+Now I'm doing this
+
+because you can actually get hold
+
+of the data that's being thrown
+
+as an error inside
+
+of the component that's being rendered
+
+as an error element.
+
+And for that React-Router-Dom
+
+gives you another special hook
+
+which we import from react-router-dom.
+
+And that's the use route error hook.
+
+This gives us an error object
+
+if you want to call it like this.
+
+And the shape
+
+of that object now depends
+
+on whether you threw a response
+
+or any other kind
+
+of object or data.
+
+If you threw a response
+
+as I'm doing it here now,
+
+this error object will include
+
+a status
+
+field.
+
+which actually reflects the status
+
+of the response you threw.
+
+In my case, that would be 500
+
+because that's the status I set here.
+
+If you threw any other kind
+
+of object, like a regular
+
+JavaScript object,
+
+then this error object would already
+
+be that thrown object.
+
+So then there would not
+
+be this special status property.
+
+But that's why you might wanna
+
+throw responses instead
+
+of regular objects
+
+because it does allow you to
+
+include this extra status property,
+
+this extra status field, which helps
+
+with building a generic error
+
+handling component.
+
+Because now an error JS
+
+in this error page,
+
+we can
+
+create our title
+
+and our message
+
+and set these two default values,
+
+but override them
+
+with more fitting values based
+
+on which error we have.
+
+So we could, for example,
+
+have these default values here,
+
+but then we can check
+
+if error dot status is maybe 500,
+
+in which case we might want
+
+to keep the title.
+
+But set the message
+
+to error.data.message.
+
+Now error.data gives us access
+
+to the
+
+data that's included
+
+in this error response
+
+that was thrown.
+
+So, to this object here,
+
+in my case,
+
+And that object has a message
+
+and we can assume
+
+that most objects
+
+that are included
+
+in error responses will
+
+have message properties.
+
+That's why I'm accessing
+
+the data object
+
+of the error response
+
+and then the message property here.
+
+But we could, for example,
+
+also check if the error status
+
+is maybe 4 0 4,
+
+which is the default status set
+
+by React router if you enter
+
+a path that's not supported.
+
+And in that case,
+
+we could set the title
+
+to not found,
+
+and the message
+
+to could not find resource
+
+or page.
+
+And now we can use
+
+these values down here
+
+and set the title
+
+to our title,
+
+which we set conditionally
+
+and also output our message here,
+
+which is set
+
+to different values
+
+based on different status codes.
+
+This
+
+data object here,
+
+actually,
+
+first of all
+
+must be converted back
+
+to an object
+
+because otherwise it's still
+
+JSON,
+
+in JSON format.
+
+So we must use JSON Parse here,
+
+and then access message
+
+on the parse data.
+
+But with that done,
+
+you see I got this error output
+
+in case
+
+of my error due
+
+to me visiting events.
+
+And that's why we might want
+
+to throw responses
+
+in the places where
+
+things go wrong
+
+and add such a
+
+generic error handling page
+
+which is rendered
+
+with help of
+
+an error element added
+
+to the root route.
+
+That's one way of handling errors
+
+and embracing those features
+
+that are built
+
+into React router.
