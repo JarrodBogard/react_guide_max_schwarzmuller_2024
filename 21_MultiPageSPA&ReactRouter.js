@@ -336,3 +336,57 @@
 // useFetcher hook is the tool to use when an action or loader, that is associated with another route/path other than the currently active path, needs to be used/executed without transitioning the route/page/url.
 // Fetcher also includes properties/tools that help track/determine whether an action or loader that was triggered/executed succeeded. It also provides access to any data returned by that loader or action via a data prop (e.g. fetcher.data). Use object destructuring to pull out any properties for ease of use. The state prop from the fetcher object is similar to the state prop from the navigation object associated with the useNavigation Hook, in that it provides the current state in the form of 'idle', 'loading', or 'submitting' string values. For navigation, these values are meant to be used with route transitions. The state object provided by fetcher shows the state of the action or loader function that was triggered using fetcher.
 // useFetcher is perfect for scenarios where some shared component, or a component that's used multiple times on the same page, needs to execute an action function without updating/switching the page/url.
+
+// Lesson 480. Deferring Data Fetching with defer()
+
+// To implement defer in a loader function:
+// 1) Move the async/await loader function code to a separate loading helper function.
+//      a. Since this code is no longer part of the loader function, the data needs to be manually parsed with the built-in json function
+//          i. the response should be awaited and parsed and then it can be stored in a variable.
+//      b. Once parsed, the specific data key can be returned by the loader.
+// 2) Remove the async/await functionality of the loader function.
+// 3) Import defer from react-router-dom.
+// 4) return the defer function inside the loader function.
+//      a. the loader function takes an object as an argument.
+//      b. the object stores returned Promises received from the loading helper function on separate keys
+// 5) The returned Promises are acquired by executing the loading helper function in-line, next to the appropriate key in the object inside the defer function.
+// 6) The useLoaderData hook is still used for the defer function to retreive the loader data.
+//      a. The data object returned by useLoaderData can be stored in a variable.
+//      b. The keys from the defer object can be accessed on the data object using dot notation
+//          i. The returned Promise is automatically parsed by React Router to the data stored in that Promise.
+// 7) Import Await component from react-router-dom.
+//      a. The Await component has a resolve prop. Use the appropriate data key and place that data in the resolve prop.
+//      b. The data in the resolve prop will be dynamically rendered by React Router when the data is resolved/fetched/loaded.
+//          i. The dynamic expression between the opening and closed tags of the Await component is an anonymous function.
+//          ii. That function takes the loaded/resolved data as an argument and inserts it into the component that is to be rendered.
+// 8) The Suspense component is imported from "react".
+//      a. Suspense has a fallback prop.
+//      b. The fallback prop can be set to any type of element such as a paragraph with loading text.
+//      c. The fallback prop value will be displayed while waiting for the Await component to resolve the loaded data.
+//      d. Once loaded, the fallback prop value will be removed and the data will be displayed to the browser.
+
+// Utilize the 'defer' function in the loader function to render a component even before the data is fully available to that component. To achieve this, the asynchronous loader function code is extracted to a separate function and given an appropriate name (e.g. loadData), and then remove the async/await keywords from the loader function itself.
+// Import the defer function from react-router-dom. This function, when executed, receives an object for bundling http requests' returned Promises. The returned promise is stored under the appropiately named key in the object passed to defer by executing the loadData helper function in-line, next to its associated key (e.g. defer({someKey: loadData()})). This Promise is essential for deferring data loading, aligning with the definition of a Promise as a value that eventually resolves.
+// The deferred data is then accessed using useLoaderData in the component, treating the data as an object with keys corresponding to the deferred Promise data props/keys (e.g. const data = useLoaderData() -> const someKey = data.someKey). Within this component, the Await component is introduced by react-router-dom, which has a 'resolve' prop expecting one of the deferred Promise data props/keys. By using object destructuring, the key is extracted and passed to the resolve prop (e.g. const {someKey} = useLoaderData() -> <Await resolve={someKey}>...).
+//      - The Await component patiently waits for the data to resolve, and once it does, a dynamic value is outputted as a function executed by React Router <Await resolve={someKey}>{(loadedSomeKey) => <Component someKey={someKey}}</Await>. This function retrieves the loaded data for the specified key passed to the resolve prop on the Await component, facilitating their output in the component and fulfilling the deferred rendering. To enhance the user experience during the loading process, a Suspense component is introduced, wrapped around the Await component.
+// The Suspense component is imported from React to enhance the user experience during data loading. The Suspense component serves as a valuable tool for displaying a fallback while waiting for additional data to arrive. The Suspense component has a 'fallback' prop, which can be set to any type of element such as a loading paragraph for example. This setup encapsulates the process of deferring data loading in a few steps, paving the way for rendering a component even before the data is fully fetched.
+
+// IMPORTANT: It will be necessary to manually parse the response data in the loadData helper function. It is a requisite step introduced by the defer feature. Specifically, the response data is obtained by awaiting response.json(), and then the specific data set on the response object is returned (e.g. const resData = response.json() -> return resData.someKey). This adjustment is crucial, considering the introduction of an intermediate step between the loader and useLoaderData.
+
+// Lesson 481. Controlling Which Data Should Be Deferred
+
+// 1) Defer can receive multiple fetch requests (returned Promises).
+//      a. Add an additional key to the defer object for each additional returned Promise.
+//          i. Each returned Promise will have its own key inside the object passed to the defer function.
+//          ii. Each returned Promise will require its own loading helper function for its specific fetch request.
+//          iii. Each returned Promise's data is acquired by executing the loading helper function in-line, next to the appropriate key.
+// 2) The useLoaderData/useRouteLoaderData returns a data object containing all the data keys set on the defer function object.
+//      a. Destructure the data object for ease of use.
+// 3) Create an Await component for each of the data keys and wrap them all together in a Fragment.
+//      b. Each Await component handles only one data key/prop, which is why one is needed for each key.
+// 4) Wrap a Suspense component around each Await component.
+// 5) IMPORTANT: To control the defer feature implement async/await in the loader function when/where appropriate.
+//      a. Add the await keyword next to any returned Promises (loading helper functions) stored on keys to override the defer feature.
+//          i. When the defer feature is overridden for a Promise, the component will wait until that component data is fetched/loaded before displaying the component, but this will not apply to any other returned Promises that are not implementing the await keyword.
+//      b. The await keyword is a kind of switch/toggle when used with defer.
+//          i. It controls which data should be awaited before moving to the appropriate route/page/component, and which data should be deferred (i.e. load data after moving to the appropriate route/page/component).
